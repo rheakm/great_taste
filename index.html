@@ -7,6 +7,7 @@
     <title>Great Taste Login</title>
     <link href="css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
+    <link rel="favicon" href="images/spotify.png">
     <style type="text/css">
       #login, #loggedin, #searched, #not-searched, #list-tracks{
         display: none;
@@ -64,7 +65,7 @@
             <img alt="Bootstrap Image Preview" src="{{my_img}}" class="rounded-circle img-size" />
           </div>
           <div id="not-searched" class="col-md-6">
-            <img alt="Bootstrap Image Preview" src="/images/spotify.png" class="rounded-circle img-size" />
+            <img alt="Bootstrap Image Preview" src="/great_taste/images/spotify.png" class="rounded-circle img-size" />
           </div>
           <div id="searched" class="col-md-6">
             <img alt="Bootstrap Image Preview" src="{{userImage}}" class="rounded-circle img-size" />
@@ -243,7 +244,7 @@
                           'Authorization': 'Bearer ' + access_token
                         },
                         success: function(response) {
-                          var userImage = '/images/no-pfp.jpeg'
+                          var userImage = '/great_taste/images/no-pfp.jpeg'
                           if(response.images[0]){
                             userImage = response.images[0].url;
                           }
