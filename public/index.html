@@ -1,0 +1,359 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Great Taste Login</title>
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <style type="text/css">
+      #login, #loggedin, #searched, #not-searched, #list-tracks{
+        display: none;
+      }
+      .text-overflow {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        width: 500px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="login" class="login-div">
+        <div class="login_container">
+            <h1 class="heading h1">Great Taste</h1>
+        </div>
+        <div class="login_container">
+            <h2 class="heading h2">Find out what songs you have in common</h2>
+        </div>
+        <div class="login_container">
+            <div id="login-button" class="btn btn-login">
+                <span>LOGIN</span>
+            </div>
+        </div>
+    </div>
+    <div id="loggedin" class="loggedin-div">
+        <div id="user-profile">
+        </div>
+    </div>
+    <div id="user-tracks">
+    </div>
+
+    <script id="user-profile-template" type="text/x-handlebars-template">
+      <div class="container-fluid">
+        <div class="row row-loggedin">
+          <div class="col-md-12">
+            <h3 class="text-center heading h1-loggedin">
+              Hello {{display_name}}!
+            </h3>
+          </div>
+        </div>
+        <div class="row row-loggedin">
+          <div class="col-md-6">
+            <input id="search" class="form-control mr-sm-2" type="text" placeholder="Enter User Id">
+          </div>
+          <div class="col-md-6">
+            <button id="search-button" type="button" class="btn btn-success my-2 my-sm-0 btn-loggedin" onclick="loadUser(`{{display_name}}`,`{{my_img}}`,`{{access_token}}`)">
+              Search
+            </div>
+          </div>
+        </div>
+        <div class="row row-loggedin">
+          <div class="col-md-6">
+            <img alt="Bootstrap Image Preview" src="{{my_img}}" class="rounded-circle img-size" />
+          </div>
+          <div id="not-searched" class="col-md-6">
+            <img alt="Bootstrap Image Preview" src="/images/spotify.png" class="rounded-circle img-size" />
+          </div>
+          <div id="searched" class="col-md-6">
+            <img alt="Bootstrap Image Preview" src="{{userImage}}" class="rounded-circle img-size" />
+          </div>
+        </div>
+        <div class="row row-loggedin">
+          <div class="col-md-12">
+             
+          <div id="compare-button" class="btn btn-login" onclick="loadTracks(`{{display_name}}`, `{{my_img}}`, `{{userImage}}`, `{{searchName}}`, `{{access_token}}`)">
+              <span>GO</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      </script>
+  
+      <script id="user-tracks-template" type="text/x-handlebars-template">
+        <div class="container-fluid">
+          <div class="row row-loggedin">
+            <div class="col-md-12">
+              <h3 class="text-center heading h1-loggedin">
+                Tracks
+              </h3>
+            </div>
+          </div>
+          <div class="row row-loggedin">
+            <div class="col-md-12">
+              <table class="table table-dark table-color">
+                <thead>
+                  <tr>
+                    <th>
+                      Name
+                    </th>
+                    <th>
+                      Album
+                    </th>
+                    <th>
+                      Artists
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {{#each}}
+                  <tr class="table-row">
+                    <td>
+                      {{name}}
+                    </td>
+                    <td>
+                      {{album.name}}
+                    </td>
+                    <td>
+                      {{#each artists}}
+                      {{name}}
+                      {{/each}}
+                    </td>
+                  </tr>
+                  {{/each}}	
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </script>
+  
+      <script id="oauth-template" type="text/x-handlebars-template">
+        <h2>oAuth info</h2>
+        <dl class="dl-horizontal">
+          <dt>Access token</dt><dd class="text-overflow">{{access_token}}</dd>
+        </dl>
+      </script>
+  
+      <script src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/2.0.0-alpha.1/handlebars.min.js"></script>
+      <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+      <script>
+        (function general() {
+  
+          var stateKey = 'spotify_auth_state';
+          /**
+           * Obtains parameters from the hash of the URL
+           * @return Object
+           */
+          function getHashParams() {
+            var hashParams = {};
+            var e, r = /([^&;=]+)=?([^&;]*)/g,
+                q = window.location.hash.substring(1);
+            while ( e = r.exec(q)) {
+               hashParams[e[1]] = decodeURIComponent(e[2]);
+            }
+            return hashParams;
+          }
+  
+          /**
+           * Generates a random string containing numbers and letters
+           * @param  {number} length The length of the string
+           * @return {string} The generated string
+           */
+          function generateRandomString(length) {
+            var text = '';
+            var possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  
+            for (var i = 0; i < length; i++) {
+              text += possible.charAt(Math.floor(Math.random() * possible.length));
+            }
+            return text;
+          };
+  
+          var userProfileSource = document.getElementById('user-profile-template').innerHTML,
+              userProfileTemplate = Handlebars.compile(userProfileSource),
+              userProfilePlaceholder = document.getElementById('user-profile');
+  
+              oauthSource = document.getElementById('oauth-template').innerHTML,
+              oauthTemplate = Handlebars.compile(oauthSource),
+              oauthPlaceholder = document.getElementById('oauth');
+  
+          var params = getHashParams();
+  
+          var access_token = params.access_token,
+              state = params.state,
+              storedState = localStorage.getItem(stateKey);
+
+          if (access_token && (state == null || state !== storedState)) {
+            alert('There was an error during the authentication');
+          } else {
+            localStorage.removeItem(stateKey);
+            if (access_token) {
+              $.ajax({
+                  url: 'https://api.spotify.com/v1/me',
+                  headers: {
+                    'Authorization': 'Bearer ' + access_token
+                  },
+                  success: function(response) {
+                    var display_name = response.display_name;
+                    var my_img = response.images[0].url;
+                    userProfilePlaceholder.innerHTML = userProfileTemplate({display_name, my_img, access_token});
+                    $('#login').hide();
+                    $('#loggedin').show();
+                    $('#not-searched').show();
+                  }
+              });
+            } else {
+                $('#login').show();
+                $('#loggedin').hide();
+            }
+  
+            document.getElementById('login-button').addEventListener('click', function() {
+  
+              var client_id = '6fa3633dc1e4423daad3ca662ada0323';
+              var redirect_uri = 'http://localhost:8888';
+  
+              var state = generateRandomString(16);
+  
+              localStorage.setItem(stateKey, state);
+              var scope = 'user-read-private playlist-read-private playlist-read-collaborative';
+  
+              var url = 'https://accounts.spotify.com/authorize';
+              url += '?response_type=token';
+              url += '&client_id=' + encodeURIComponent(client_id);
+              url += '&scope=' + encodeURIComponent(scope);
+              url += '&redirect_uri=' + encodeURIComponent(redirect_uri);
+              url += '&state=' + encodeURIComponent(state);
+  
+              window.location = url;
+            }, false);
+          }
+        })();
+      </script>
+          <script>
+            function loadUser(display_name, my_img, access_token) {
+              var userProfileSource = document.getElementById('user-profile-template').innerHTML,
+              userProfileTemplate = Handlebars.compile(userProfileSource),
+              userProfilePlaceholder = document.getElementById('user-profile');
+              var searchName = document.getElementById('search').value;
+              $.ajax({
+                        url: `https://api.spotify.com/v1/users/${searchName}`,
+                        headers: {
+                          'Authorization': 'Bearer ' + access_token
+                        },
+                        success: function(response) {
+                          var userImage = '/images/no-pfp.jpeg'
+                          if(response.images[0]){
+                            userImage = response.images[0].url;
+                          }
+                          userProfilePlaceholder.innerHTML = userProfileTemplate({response, display_name, my_img, userImage, searchName, access_token});
+                          $('#not-searched').hide();
+                          $('#searched').show();
+                        }
+              });
+            };
+          </script>
+      <script>
+        function loadTracks(display_name, my_img, userImage, searchName, access_token) {
+          var userPlaylistTracksSource = document.getElementById('user-tracks-template').innerHTML,
+          userPlaylistTracksTemplate = Handlebars.compile(userPlaylistTracksSource),
+          userPlaylistTracksPlaceholder = document.getElementById('user-tracks');
+          var myPlaylistIds = [];
+          var friendsPlaylistIds = [];
+          var myTracksId = [];
+          var friendsTracksId = [];
+          var commonTracksId = [];
+          var commonTracks = [];
+          $.ajax({
+            async: false,
+            url: `https://api.spotify.com/v1/users/${searchName}/playlists?offset=0&limit=50`,
+            headers: {
+              'Authorization': 'Bearer ' + access_token
+            },
+            success: function(response) {
+              var friendsPlaylists = response.items;
+              for(const playlist of friendsPlaylists){
+                friendsPlaylistIds.push(playlist.id);
+              }
+              for(const playlist of friendsPlaylistIds){
+                $.ajax({
+                  async: false,
+                  url: `https://api.spotify.com/v1/playlists/${playlist}/tracks`,
+                  headers: {
+                    'Authorization': 'Bearer ' + access_token
+                  },
+                  success: function(response) {
+                    var friendsTracks = response.items;
+                    for(const tracks of friendsTracks){
+                      friendsTracksId.push(tracks.track.id);
+                    }
+                  }
+                });
+              }
+            }
+          });
+          $.ajax({
+            async: false,
+            url: 'https://api.spotify.com/v1/me/playlists?offset=0&limit=50',
+            headers: {
+              'Authorization': 'Bearer ' + access_token
+            },
+            success: function(response) {
+              var playlists = response.items;
+              for(const playlist of playlists){
+                myPlaylistIds.push(playlist.id);
+              }
+              for(const playlist of myPlaylistIds){
+                $.ajax({
+                  async: false,
+                  url: `https://api.spotify.com/v1/playlists/${playlist}/tracks`,
+                  headers: {
+                  'Authorization': 'Bearer ' + access_token
+                  },
+                  success: function(response) {
+                    var myTracks = response.items;
+                    for(const tracks of myTracks){
+                      myTracksId.push(tracks.track.id);
+                    }
+                  }
+                });
+              }
+              for(const myTrack of myTracksId){
+                for(const friendTrack of friendsTracksId){
+                  var added = false;
+                  if(myTrack === friendTrack){
+                    for(const comTrack of commonTracksId){
+                      if(myTrack === comTrack){
+                        added = true;
+                      }
+                    }
+                    if(!added){
+                      commonTracksId.push(myTrack);
+                    }
+                  }
+                }
+              }
+              console.log(commonTracksId);
+              for(const tracks of commonTracksId){
+                $.ajax({
+                  async: false,
+                  url: `https://api.spotify.com/v1/tracks/${tracks}`,
+                  headers: {
+                  'Authorization': 'Bearer ' + access_token
+                  },
+                  success: function(response) {
+                    commonTracks.push(response);
+                  }
+                }); 
+              }
+              userPlaylistTracksPlaceholder.innerHTML = userPlaylistTracksTemplate(commonTracks);
+              $('#login').hide();
+              $('#loggedin').hide();
+              $('#list-tracks').show(); 
+            }
+          });                                     
+        };
+      </script>
+    </body>
+  </html>
