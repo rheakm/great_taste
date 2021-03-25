@@ -323,7 +323,7 @@
                   success: function(response) {
                     var myTracks = response.items;
                     for(const tracks of myTracks){
-                      myTracksId.push(tracks.track.id);
+                      myTracksId.push(tracks?.track.id);
                     }
                   }
                 });
